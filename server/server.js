@@ -86,7 +86,36 @@ app.post('/posts/:id/comments', async (req, res) => {
                 userId: req.cookies.userId,
                 parentId: req.body.parentId,
                 postId: req.params.id
-            }
+            },
+            select: COMMENT_SELECT_FIELDS
+        })
+    )
+})
+
+app.patch('/posts/:id/comments/:commentId', async (req, res) => {
+    if (req.body.message === '' || req.body.message === null) {
+        return res.send(app.httpErrors.badRequest("Message is required"))
+    }
+
+    const comment = await prisma.comment.findUnique({
+        where: {
+            id: req.params.commentId
+        },
+    });
+
+    if (comment.userId !== req.cookies.userId) {
+        return res.send(app.httpErrors.unauthorized('Don\'t have permission to edit'))
+    }
+
+    return await commitToDb(
+        prisma.comment.update({
+            where: {
+                id: req.params.commentId
+            },
+            data: {
+                message: req.body.message
+            },
+            select: COMMENT_SELECT_FIELDS
         })
     )
 })
