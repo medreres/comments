@@ -120,6 +120,30 @@ app.patch('/posts/:id/comments/:commentId', async (req, res) => {
     )
 })
 
+app.delete('/posts/:id/comments/:commentId', async (req, res) => {
+    if (req.body.message === '' || req.body.message === null) {
+        return res.send(app.httpErrors.badRequest("Message is required"))
+    }
+
+    const comment = await prisma.comment.findUnique({
+        where: {
+            id: req.params.commentId
+        },
+    });
+
+    if (comment.userId !== req.cookies.userId) {
+        return res.send(app.httpErrors.unauthorized('Don\'t have permission to delete'))
+    }
+
+    return await commitToDb(
+        prisma.comment.delete({
+            where: {
+                id: req.params.commentId
+            }
+        })
+    )
+})
+
 async function commitToDb(promise) {
     const [err, data] = await app.to(promise)
     if (err) return app.httpErrors.internalServerError(err.message)
