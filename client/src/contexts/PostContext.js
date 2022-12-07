@@ -10,6 +10,7 @@ export const Context = React.createContext({
   updateComments: () => {},
   updateComment: (comment) => {},
   deleteComment: (id) => {},
+  toggleLike: (id, addLike) => {},
 });
 
 export const usePost = () => {
@@ -71,6 +72,30 @@ const PostContextProvider = ({ children }) => {
     );
   }
 
+  function toggleLike(id, addLike) {
+    setComments((prevState) =>
+      prevState.map((comment) => {
+        if (comment.id === id) {
+          if (addLike) {
+            return {
+              ...comment,
+              likeCount: comment.likeCount + 1,
+              likedByMe: true,
+            };
+          } else {
+            return {
+              ...comment,
+              likeCount: comment.likeCount - 1,
+              likedByMe: false,
+            };
+          }
+        } else {
+          return comment;
+        }
+      })
+    );
+  }
+
   return (
     <Context.Provider
       value={{
@@ -80,6 +105,7 @@ const PostContextProvider = ({ children }) => {
         updateComments: updateComments,
         updateComment: updateComment,
         deleteComment: deleteComment,
+        toggleLike: toggleLike,
       }}
     >
       {loading ? (

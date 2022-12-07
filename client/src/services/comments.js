@@ -28,3 +28,10 @@ export function deleteComment({ postId, id }) {
     },
   });
 }
+
+
+export function toggleLikeComment({ postId, id }) {
+  return makeRequest(`posts/${postId}/comments/${id}/toggleLike`, {
+    method: "POST"
+  });
+}

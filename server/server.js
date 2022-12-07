@@ -67,12 +67,42 @@ app.get('/posts/:id', async (req, res) => {
                 orderBy: {
                     createdAt: 'desc'
                 },
-                select: COMMENT_SELECT_FIELDS
+                select: {
+                    ...COMMENT_SELECT_FIELDS,
+                    _count: {
+                        select: {
+                            likes: true
+                        }
+                    }
+                }
             }
+        }
+    }).then(async post => {
+        const likes = await prisma.like.findMany({
+            where: {
+                userId: req.cookies.userId,
+                commentId: {
+                    in: post.comments.map(comment => comment.id)
+                }
+            }
+        })
+
+        return {
+            ...post,
+            comments: post.comments.map(comment => {
+                const {
+                    _count,
+                    ...commentField
+                } = comment;
+                return {
+                    ...commentField,
+                    likedByMe: likes.find(like => like.commentId === comment.id),
+                    likeCount: _count.likes
+                }
+            })
         }
     }))
 })
-
 
 app.post('/posts/:id/comments', async (req, res) => {
     if (req.body.message === '' || req.body.message === null) {
@@ -88,9 +118,16 @@ app.post('/posts/:id/comments', async (req, res) => {
                 postId: req.params.id
             },
             select: COMMENT_SELECT_FIELDS
+        }).then(comment => {
+            return {
+                ...comment,
+                likeCount: 0,
+                likedByMe: false
+            }
         })
     )
 })
+
 
 app.patch('/posts/:id/comments/:commentId', async (req, res) => {
     if (req.body.message === '' || req.body.message === null) {
@@ -142,6 +179,40 @@ app.delete('/posts/:id/comments/:commentId', async (req, res) => {
             }
         })
     )
+})
+
+
+app.post('/posts/:id/comments/:commentId/toggleLike', async (req, res) => {
+    const data = {
+        commentId: req.params.commentId,
+        userId: req.cookies.userId
+    }
+
+    console.log(data)
+
+    const like = await prisma.like.findUnique({
+        where: {
+            userId_commentId: data
+        }
+    })
+
+    console.log(like)
+
+    if (like === null) {
+        return await commitToDb(prisma.like.create({
+            data
+        })).then(() => ({
+            addLike: true
+        }))
+    } else {
+        return await commitToDb(prisma.like.delete({
+            where: {
+                userId_commentId: data
+            }
+        }).then(() => ({
+            addLike: false
+        })))
+    }
 })
 
 async function commitToDb(promise) {

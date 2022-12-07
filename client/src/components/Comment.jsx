@@ -1,6 +1,6 @@
 import IconButton from "./IconButton";
 import { useState } from "react";
-import { FaHeart, FaReply, FaEdit, FaTrash } from "react-icons/fa";
+import { FaHeart, FaReply, FaEdit, FaTrash, FaRegHeart } from "react-icons/fa";
 import { usePost } from "../contexts/PostContext";
 import CommentsList from "./CommentsList";
 import { useAsyncFn } from "../hooks/useAsync";
@@ -8,18 +8,26 @@ import {
   createComment,
   updateComment as updateCommentLocalStorage,
   deleteComment as deleteCommentLocalStorage,
+  toggleLikeComment,
 } from "../services/comments";
 import CommentForm from "./CommentForm";
 import { useUser } from "../hooks/userUser";
 
-const Comment = ({ id, message, user, createdAt }) => {
-  const { post, getReplies, updateComments, updateComment, deleteComment } =
-    usePost();
+const Comment = ({ id, message, user, createdAt, likeCount, likedByMe }) => {
+  const {
+    post,
+    getReplies,
+    updateComments,
+    updateComment,
+    deleteComment,
+    toggleLike,
+  } = usePost();
   const childComments = getReplies(id);
   const [areChildrenHidden, setAreChildrenHidden] = useState(true);
   const createCommentFn = useAsyncFn(createComment);
   const editCommentFn = useAsyncFn(updateCommentLocalStorage);
   const deleteCommentFn = useAsyncFn(deleteCommentLocalStorage);
+  const likeCommentFn = useAsyncFn(toggleLikeComment);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const { id: userId } = useUser();
@@ -57,6 +65,15 @@ const Comment = ({ id, message, user, createdAt }) => {
         deleteComment(id);
       });
   }
+
+  function onToggleLike() {
+    return likeCommentFn
+      .execute({ postId: post.id, id })
+      .then(({ addLike }) => {
+        console.log(addLike)
+        toggleLike(id, addLike);
+      });
+  }
   return (
     <>
       <div className="comment">
@@ -79,8 +96,12 @@ const Comment = ({ id, message, user, createdAt }) => {
           </div>
         )}
         <div className="footer">
-          <IconButton Icon={FaHeart} aria-label="Like">
-            2
+          <IconButton
+            Icon={likedByMe ? FaHeart : FaRegHeart}
+            aria-label={likedByMe ? "Unlike" : "Like"}
+            onClick={onToggleLike}
+          >
+            {likeCount}
           </IconButton>
           <IconButton
             Icon={FaReply}
@@ -89,7 +110,7 @@ const Comment = ({ id, message, user, createdAt }) => {
             aria-label={isReplying ? "Cancel replying" : "Reply"}
           />
 
-          {user.id == userId && (
+          {user.id === userId && (
             <>
               <IconButton
                 Icon={FaEdit}
