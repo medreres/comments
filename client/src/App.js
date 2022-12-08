@@ -4,6 +4,7 @@ import PostList from "./components/PostList";
 import PostContextProvider from "./contexts/PostContext";
 
 function App() {
+  console.log(process.env.REACT_APP_SERVER_URL)
   return (
     <BrowserRouter>
       <Routes>
