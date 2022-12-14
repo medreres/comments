@@ -9,6 +9,7 @@ import {
 
 dotnev.config()
 
+
 const app = fastify();
 app.register(sensible);
 app.register(cookie, {
@@ -47,6 +48,9 @@ const COMMENT_SELECT_FIELDS = {
 
 
 app.get('/posts', async (req, res) => {
+
+    console.log('/posts')
+
     return await commitToDb(prisma.post.findMany({
         select: {
             id: true,
